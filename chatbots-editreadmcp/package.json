@@ -1,0 +1,32 @@
+{
+  "name": "chatbots-editreadmcp",
+  "version": "0.2.0",
+  "description": "Coding-tools MCP for ChatGPT/Grok — bash/read/write/edit/search over Cloudflare tunnel",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "chatbots-editreadmcp": "start.mjs"
+  },
+  "scripts": {
+    "start": "node start.mjs",
+    "dev": "node --watch start.mjs",
+    "server": "node server.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "chatgpt",
+    "grok",
+    "cloudflare",
+    "tunnel",
+    "filesystem",
+    "coding-agent"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^5.2.1",
+    "zod": "^4.4.3"
+  }
+}

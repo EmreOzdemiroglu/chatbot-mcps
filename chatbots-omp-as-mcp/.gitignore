@@ -1,0 +1,6 @@
+node_modules/
+.env
+cloudflared
+*.log
+.DS_Store
+tmp/

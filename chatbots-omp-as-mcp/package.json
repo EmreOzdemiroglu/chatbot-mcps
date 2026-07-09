@@ -1,0 +1,32 @@
+{
+  "name": "chatbots-omp-as-mcp",
+  "version": "0.1.0",
+  "description": "OMP agent MCP for ChatGPT/Grok — multi-model omp_prompt over Cloudflare tunnel",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "chatbots-omp-as-mcp": "start.mjs"
+  },
+  "scripts": {
+    "start": "node start.mjs",
+    "dev": "node --watch start.mjs",
+    "server": "node server.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "chatgpt",
+    "grok",
+    "omp",
+    "oh-my-pi",
+    "cloudflare",
+    "tunnel"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^5.2.1",
+    "zod": "^4.4.3"
+  }
+}
