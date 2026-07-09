@@ -49,6 +49,56 @@ function errorResult(err) {
   };
 }
 
+function runShellCommand(command, timeout) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, {
+      shell: true,
+      cwd: ROOT,
+      env: process.env,
+      timeout,
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d) => {
+      stdout += d.toString();
+      if (stdout.length > 200_000)
+        stdout = stdout.slice(0, 200_000) + '\n…truncated';
+    });
+    child.stderr.on('data', (d) => {
+      stderr += d.toString();
+      if (stderr.length > 100_000)
+        stderr = stderr.slice(0, 100_000) + '\n…truncated';
+    });
+    child.on('error', reject);
+    child.on('close', (code, signal) => {
+      resolve({ command, code, signal, stdout, stderr, cwd: ROOT });
+    });
+  });
+}
+
+function normalizeBashArgs({ command, commands, timeout_ms, stop_on_error }) {
+  if (command && commands) {
+    throw new Error('Provide either command or commands, not both');
+  }
+  const normalized = commands ?? (command ? [command] : []);
+  if (!Array.isArray(normalized) || normalized.length === 0) {
+    throw new Error('command or commands is required');
+  }
+  if (normalized.length > 20) {
+    throw new Error('commands is limited to 20 entries');
+  }
+  for (const cmd of normalized) {
+    if (typeof cmd !== 'string' || !cmd.trim()) {
+      throw new Error('commands must contain non-empty strings');
+    }
+  }
+  return {
+    commands: normalized,
+    timeout: timeout_ms ?? 60_000,
+    stopOnError: stop_on_error ?? true,
+  };
+}
+
 function createServer() {
   const server = new McpServer({
     name: 'chatbots-editreadmcp',
@@ -151,40 +201,41 @@ function createServer() {
     {
       title: 'Bash',
       description:
-        'Run a shell command with cwd inside the workspace root (pi-style). Prefer small commands; long output is truncated.',
+        'Run one shell command or a batch of shell commands with cwd inside the workspace root (pi-style). Batch mode accepts commands[] and stops on the first non-zero exit by default.',
       inputSchema: {
-        command: z.string().describe('Shell command'),
-        timeout_ms: z.number().int().positive().optional(),
+        command: z.string().optional().describe('Single shell command'),
+        commands: z
+          .array(z.string())
+          .max(20)
+          .optional()
+          .describe('Multiple shell commands to run sequentially'),
+        timeout_ms: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe('Timeout per command in milliseconds'),
+        stop_on_error: z
+          .boolean()
+          .optional()
+          .describe('Stop batch execution after the first failing command'),
       },
     },
-    async ({ command, timeout_ms }) => {
-      const timeout = timeout_ms ?? 60_000;
+    async (args) => {
       try {
-        const result = await new Promise((resolve, reject) => {
-          const child = spawn(command, {
-            shell: true,
-            cwd: ROOT,
-            env: process.env,
-            timeout,
-          });
-          let stdout = '';
-          let stderr = '';
-          child.stdout.on('data', (d) => {
-            stdout += d.toString();
-            if (stdout.length > 200_000)
-              stdout = stdout.slice(0, 200_000) + '\n…truncated';
-          });
-          child.stderr.on('data', (d) => {
-            stderr += d.toString();
-            if (stderr.length > 100_000)
-              stderr = stderr.slice(0, 100_000) + '\n…truncated';
-          });
-          child.on('error', reject);
-          child.on('close', (code, signal) => {
-            resolve({ code, signal, stdout, stderr, cwd: ROOT });
-          });
+        const { commands, timeout, stopOnError } = normalizeBashArgs(args);
+        const results = [];
+        for (const cmd of commands) {
+          const result = await runShellCommand(cmd, timeout);
+          results.push(result);
+          if (stopOnError && result.code !== 0) break;
+        }
+        return textResult({
+          cwd: ROOT,
+          count: results.length,
+          stopped: results.length < commands.length,
+          results,
         });
-        return textResult(result);
       } catch (e) {
         return errorResult(e);
       }
