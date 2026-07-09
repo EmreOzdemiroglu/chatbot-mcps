@@ -2,6 +2,9 @@
 
 Two local MCP servers for connecting **ChatGPT** and **Grok** to tools running on your own computer through Cloudflare free tunnels.
 
+<img width="452" height="701" alt="image" src="https://github.com/user-attachments/assets/45c43edd-7fef-47e3-819f-6a20b44fee1c" />
+
+
 This repo contains two independent servers:
 
 | Project | Port | Purpose |
